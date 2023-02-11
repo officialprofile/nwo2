@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
   },
   author: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontStyle: 'italic',
   },
   explanation: {
     fontSize: 11,
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   buttonFav: {
     padding: 10,
     borderRadius: 0,
-    alignSelf: 'flex-end',
+    alignSelf: 'flex-start',
   },
 });
 
@@ -100,7 +100,7 @@ const data = require('./dict.json')
 
 const quotes = require('./quotes.json')
 
-const Item = ({ title, description, explanation, onAddToFavorites }) => (
+const Item = ({ title, description, explanation, isFavorited, onToggleFavorite }) => (
   <View style={styles.itemContainer}>
     <View style={styles.container}>
       <View style={styles.textContainer}>
@@ -109,43 +109,40 @@ const Item = ({ title, description, explanation, onAddToFavorites }) => (
         <Text style={styles.explanation}>{explanation}</Text>
       </View>
       <View style={styles.buttonFav}>
-        <TouchableOpacity style={styles.buttonFav} onPress={onAddToFavorites}>
-          <MaterialCommunityIcons name="heart-outline" size={24} color="black" />
+        <TouchableOpacity style={styles.buttonFav} onPress={onToggleFavorite}>
+          <MaterialCommunityIcons name={isFavorited ? "heart" : "heart-outline"} size={24} color={isFavorited ? "red" : "black"} />
         </TouchableOpacity>
       </View>
     </View>
   </View>
 );
 
-const Quote = ({ quote, author, onAddToFavorites }) => (
-  <View style={styles.itemContainer}>
-    <View style={styles.container}>
-      <View style={styles.textContainer}>
-        <Text style={styles.quote}>{quote}</Text>
-        <Text style={styles.author}>{author}</Text>
-      </View>
-      <View style={styles.buttonFav}>
-        <TouchableOpacity style={styles.buttonFav} onPress={onAddToFavorites}>
-          <MaterialCommunityIcons name="heart-outline" size={24} color="black" />
-        </TouchableOpacity>
-      </View>
-    </View>
+const Quote = ({ quote, author }) => (
+  <View  style={styles.itemContainer}>
+    <Text style={styles.quote}>{quote}</Text>
+    <Text style={styles.author}>{author}</Text>
   </View>
 );
 
 
-function HomeScreen() {
-  const [favorites, setFavorites] = useState([]);
+function HomeScreen( {favorites, setFavorites} ) {
+  const [items, setItems] = useState(data);
 
-  const handleAddToFavorites = (item) => {
-    setFavorites([...favorites, item]);
+  const handleToggleFavorite = (item) => {
+    item.isFavorited = !item.isFavorited;
+    setFavorites(
+      item.isFavorited ? [...favorites, item] : favorites.filter(favorite => favorite.title !== item.title)
+    );
+    const index = items.findIndex((i) => i.title === item.title);
+    items[index] = item;
+    setItems([...items]);
   };
 
   return (
     <View>
       <FlatList
         data={data}
-        renderItem={({ item }) => <Item title={item.title} description={item.description}  explanation={item.explanation} onAddToFavorites={() => handleAddToFavorites(item)} />}
+        renderItem={({ item }) => <Item title={item.title} description={item.description} explanation={item.explanation} isFavorited={item.isFavorited} onToggleFavorite={() => handleToggleFavorite(item)} />}
         keyExtractor={item => item.title}
       />
     </View>
@@ -153,14 +150,12 @@ function HomeScreen() {
 }
 
 
-function FavoritesScreen() {
-  const [favorites, setFavorites] = useState([]);
-
+function FavoritesScreen( {favorites} ) {
   return (
     <View>
       <FlatList
         data={favorites}
-        renderItem={({ item }) => <Item title={item.title} description={item.description} />}
+        renderItem={({ item }) => <Item title={item.title} description={item.description}  explanation={item.explanation} isFavorited={true} />}
         keyExtractor={item => item.title}
       />
     </View>
@@ -204,20 +199,58 @@ function RandomScreen() {
 
 function QuoteScreen() {
   return (
-    <View><Text>tekst</Text></View>
+    <View>
+      <FlatList
+        data={quotes}
+        renderItem={({ item }) => <Quote quote={item.quote} author={item.author} />}
+        keyExtractor={item => item.quote}
+      />
+    </View>
+  );
+}
+
+function RandomQuoteScreen() {
+  const [selectedItem, setSelectedItem] = useState(null);
+
+  const handleButtonPress = () => {
+    const randomIndex = Math.floor(Math.random() * quotes.length);
+    setSelectedItem(quotes[randomIndex]);
+  };
+
+  return (
+    <View style={styles.randomContainer}>
+      {selectedItem ? (
+        <>
+          <Text style={styles.titleRandom}>{selectedItem.quote}</Text>
+          <Text style={styles.descriptionRandom}> </Text>
+          <Text style={styles.descriptionRandom}>{selectedItem.author}</Text>
+        </>
+      ) : (
+        <>
+          <Text style={styles.titleRandom}>Kliknij na przycisk poniżej</Text>
+          <Text style={styles.descriptionRandom}>Wylosuj pierwszy cytat</Text>
+        </>
+
+      )}
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity style={styles.button} onPress={handleButtonPress}>
+          <Text style={styles.buttonText}>Losuj</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 
 function AboutScreen() {
   return (
     <View style={styles.aboutContainer}>
-      <Text style={styles.titleRandom}>New Word Order</Text>
+      <Text style={styles.titleRandom}>Dykcjonarz</Text>
       <Text style={styles.descriptionRandom}> </Text>
       <Text style={styles.descriptionRandom}>Słowa wybrane własnoręcznie na podstawie słownika wyrazów obcych i zwrotów obcojęzycznych Władysława Kopalińskiego.</Text>
       <Text style={styles.descriptionRandom}> </Text>
       <Text style={styles.descriptionRandom}>Aplikacja stworzona na własne potrzeby, jej zawartość może nie do końca odpowiadać potrzebom innych użytkowników.</Text>
       <Text style={styles.descriptionRandom}> </Text>
-      <Text style={styles.descriptionRandom}>Uwaga: nie wszystkie funkcjonalności są w programie prawidłowo rozwinięte.</Text>
+      <Text style={styles.descriptionRandom}>Uwaga: nie wszystkie funkcjonalności są w programie prawidłowo rozwinięte.a</Text>
       <Text style={styles.descriptionRandom}> </Text>
       <Text style={styles.descriptionLink} onPress={() => Linking.openURL("https://github.com/officialprofile")}>Projekt open source github.com/officialprofile</Text>
 
@@ -228,6 +261,9 @@ function AboutScreen() {
 const Tab = createBottomTabNavigator();
 
 export default function App() {
+  const [favorites, setFavorites] = useState([]);
+  
+
   return (
     <NavigationContainer>
     <Tab.Navigator
@@ -242,16 +278,21 @@ export default function App() {
     >
         <Tab.Screen
           name="Słownik"
-          component={HomeScreen}
-          options={{ headerTitle: ' ', tabBarIcon: makeIconRender("book-open-variant")}}
-        />
+
+          options={{ headerTitle: ' ', tabBarIcon: makeIconRender("book-open-page-variant-outline")}}
+        >
+          {(props) => <HomeScreen {...props} favorites={favorites} setFavorites={setFavorites} />}
+        </Tab.Screen>
         <Tab.Screen
           name="Ulubione"
-          component={FavoritesScreen}
+
           options={{ headerTitle: ' ', tabBarIcon: makeIconRender("heart-outline") }}
-        />
+        >
+          {(props) => <FavoritesScreen {...props} favorites={favorites} setFavorites={setFavorites} />}
+        </Tab.Screen>
+
         <Tab.Screen
-          name="Losowe wyrazy"
+          name="Losuj wyraz"
           component={RandomScreen}
           options={{ headerTitle: ' ', tabBarIcon: makeIconRender("autorenew") }}
         />
@@ -261,9 +302,14 @@ export default function App() {
           options={{ headerTitle: ' ', tabBarIcon: makeIconRender("comment-quote-outline") }}
         />
         <Tab.Screen
-          name="O programie"
+          name="Losuj cytat"
+          component={RandomQuoteScreen}
+          options={{ headerTitle: ' ', tabBarIcon: makeIconRender("comment-question-outline") }}
+        />
+        <Tab.Screen
+          name="O aplikacji"
           component={AboutScreen}
-          options={{ headerTitle: ' ', tabBarIcon: makeIconRender("information-outline") }}
+          options={{ headerTitle: ' ', tabBarIcon: makeIconRender("information-variant") }}
         />
       </Tab.Navigator>
     </NavigationContainer>
